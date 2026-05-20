@@ -5,7 +5,6 @@ import {
   createUserWithEmailAndPasswordInputModel,
   createUserWithEmailAndPasswordOutputModel,
 } from "./model";
-import {} from "@repo/services/user";
 import { userService } from "../../services";
 
 const TAGS = ["Authentication"];
@@ -15,8 +14,8 @@ export const authRouter = router({
   createUserWithEmailAndPassword: publicProcedure
     .meta({
       openapi: {
-        method: "POST",
-        path: "/createUserWithEmailAndPassword",
+        method: 'POST',
+        path: getPath('/createUserWithEmailAndPassword'),
         tags: TAGS,
       },
     })

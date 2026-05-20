@@ -1,6 +1,6 @@
 import {randomBytes, createHmac} from 'node:crypto'
 import {db, eq} from '@repo/database';
-import {db, usersTable} from '@repo/database/models/user'
+import {usersTable} from '@repo/database/models/user'
 import {type CreateUserWithEmailAndPasswordInputType, createUserWithEmailAndPasswordInput} from './modal'
 import { UserRefreshClient } from 'google-auth-library';
 
@@ -24,8 +24,7 @@ class UserService{
 		const hash = createHmac('sha256', salt).update(password).digest('hex')
 
 		//Create User in th DB
-		const userInsertResult = await db.insert(usersTable).values({fullName, email, password: salt, hash}).returning({ id: usersTable.id
-		})
+		const userInsertResult = await db.insert(usersTable).values({fullName, email, password: hash, salt}).returning({ id: usersTable.id})
 
 		if (!userInsertResult || userInsertResult.length === 0 || !userInsertResult[0]?.id) throw new Error('Something went wrong while creating User')
 
