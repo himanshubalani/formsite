@@ -12,6 +12,7 @@ import { Input } from "~/components/ui/input"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import {trpc} from '~/trpc/client'
 import { email } from "zod"
+import { useSignup } from "~/hooks/api/auth"
 
 type SignupFormValues = {
   name: string;
@@ -24,7 +25,8 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
-  const {mutateAsync: createUserWithEmailAndPasswordAsync} = trpc.auth.createUserWithEmailAndPassword.useMutation();
+  const { createUserWithEmailAndPasswordAsync } = useSignup();
+
   const { register, handleSubmit, formState: {isSubmitting} } = useForm<SignupFormValues>({
     defaultValues: {
       name: "",
@@ -74,7 +76,9 @@ export function SignupForm({
           <FieldDescription>Please confirm your password.</FieldDescription>
         </Field>
         <Field>
-          <Button type="submit">Create Account</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Account"}
+          </Button>
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>
         <Field>
