@@ -1,31 +1,34 @@
-'use client'
-import { cn } from "~/lib/utils"
-import { Button } from "~/components/ui/button"
+"use client";
+import { cn } from "~/lib/utils";
+import { Button } from "~/components/ui/button";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "~/components/ui/field"
-import { Input } from "~/components/ui/input"
-import { useForm, type SubmitHandler } from "react-hook-form"
-import {trpc} from '~/trpc/client'
-import { email } from "zod"
+} from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { trpc } from "~/trpc/client";
+import { email } from "zod";
+import { useSignup } from "~/hooks/api/auth";
 
 type SignupFormValues = {
   name: string;
   email: string;
   password: string;
   confirmPassword: string;
-}
+};
 
-export function SignupForm({
-  className,
-  ...props
-}: React.ComponentProps<"form">) {
-  const {mutateAsync: createUserWithEmailAndPasswordAsync} = trpc.auth.createUserWithEmailAndPassword.useMutation();
-  const { register, handleSubmit, formState: {isSubmitting} } = useForm<SignupFormValues>({
+export function SignupForm({ className, ...props }: React.ComponentProps<"form">) {
+  const { createUserWithEmailAndPasswordAsync } = useSignup();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<SignupFormValues>({
     defaultValues: {
       name: "",
       email: "",
@@ -35,13 +38,27 @@ export function SignupForm({
   });
 
   const onSubmit: SubmitHandler<SignupFormValues> = async (values) => {
+    // TODO: Remove this before prod
     console.log(values);
-    const {id} = await createUserWithEmailAndPasswordAsync({email: values.email, fullName: values.name, password: values.password})
-    console.log(`User created with id ${id}`)
+      if (values.password !== values.confirmPassword) {
+        alert("Passwords do not match");
+        return;
+      }
+    const { id } = await createUserWithEmailAndPasswordAsync({
+      email: values.email,
+      fullName: values.name,
+      password: values.password,
+    });
+    // TODO: Remove this before prod
+    console.log(`User created with id ${id}`);
   };
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit(onSubmit)}>
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+      onSubmit={handleSubmit(onSubmit)}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Create your account</h1>
@@ -55,18 +72,21 @@ export function SignupForm({
         </Field>
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" type="email" placeholder="m@example.com" required {...register("email")} />
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+            {...register("email")}
+          />
           <FieldDescription>
-            We&apos;ll use this to contact you. We will not share your email
-            with anyone else.
+            We&apos;ll use this to contact you. We will not share your email with anyone else.
           </FieldDescription>
         </Field>
         <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <Input id="password" type="password" required {...register("password")} />
-          <FieldDescription>
-            Must be at least 8 characters long.
-          </FieldDescription>
+          <FieldDescription>Must be at least 8 characters long.</FieldDescription>
         </Field>
         <Field>
           <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
@@ -74,7 +94,9 @@ export function SignupForm({
           <FieldDescription>Please confirm your password.</FieldDescription>
         </Field>
         <Field>
-          <Button type="submit">Create Account</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Account"}
+          </Button>
         </Field>
         <FieldSeparator>Or continue with</FieldSeparator>
         <Field>
@@ -93,5 +115,5 @@ export function SignupForm({
         </Field>
       </FieldGroup>
     </form>
-  )
+  );
 }
