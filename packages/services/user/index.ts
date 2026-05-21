@@ -2,7 +2,7 @@ import {randomBytes, createHmac} from 'node:crypto'
 import * as JWT from 'jsonwebtoken'
 import {db, eq} from '@repo/database';
 import {usersTable} from '@repo/database/models/user'
-import {type CreateUserWithEmailAndPasswordInputType, GenerateUserTokenPayloadType, createUserWithEmailAndPasswordInput, generateUserTokenPayload } from './modal'
+import {type CreateUserWithEmailAndPasswordInputType, GenerateUserTokenPayloadType, SignInUserWithEmailAndPasswordInputType, createUserWithEmailAndPasswordInput, generateUserTokenPayload, signInUserWithEmailAndPasswordInput } from './modal'
 import { UserRefreshClient } from 'google-auth-library';
 import { env } from '../env';
 
@@ -20,6 +20,10 @@ class UserService{
 		return { token }
 	}
 
+	private async generateHash(salt: string, password: string) {
+		return createHmac('sha256', salt).update(password).digest('hex')
+	}
+
 	public async createUserWithEmailAndPassword(payload: CreateUserWithEmailAndPasswordInputType) {
 		const { fullName, email, password } = await createUserWithEmailAndPasswordInput.parseAsync(payload)
 
@@ -29,7 +33,7 @@ class UserService{
 		
 		//Calculate salt and hash the password
 		const salt = randomBytes(16).toString('hex')
-		const hash = createHmac('sha256', salt).update(password).digest('hex')
+		const hash = await this.generateHash(salt, password)
 
 		//Create User in th DB
 		const userInsertResult = await db.insert(usersTable).values({fullName, email, password: hash, salt}).returning({ id: usersTable.id})
@@ -43,6 +47,21 @@ class UserService{
 		return {
 			id: userId, token
 		}
+	}
+
+	public async signInUserwithEmailAndPassword(payload: SignInUserWithEmailAndPasswordInputType) {
+		const { email , password} = await signInUserWithEmailAndPasswordInput.parseAsync(payload)
+
+		const existingUser = await this.getUserByEmail(email)
+		if (!existingUser) throw new Error('Error: User with this email does not exist')
+		
+		if (!existingUser.password || !existingUser.salt) throw new Error('Error: Invalid Authentication Method. Try a different authentication method')
+			const hash = await this.generateHash(existingUser.salt, password)
+
+		if (hash !== existingUser.password) throw new Error('Invalid Email address or Password')
+
+			const { token } = await this.generateUserToken({id: existingUser.id})
+			return{ id: existingUser.id, token } 
 	}
 
 }

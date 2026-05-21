@@ -1,3 +1,4 @@
+import { sign } from 'crypto';
 import { z } from 'zod';
 
 export const createUserWithEmailAndPasswordInput = z.object({
@@ -14,3 +15,11 @@ export const generateUserTokenPayload = z.object({
 })
 
 export type GenerateUserTokenPayloadType = z.infer<typeof generateUserTokenPayload>
+
+export const signInUserWithEmailAndPasswordInput = z.object({
+	email: z.email().describe('Email of the user'),
+	//TODO: Add Regex here in password
+	password: z.string().describe('Password set by the user')
+})
+
+export type SignInUserWithEmailAndPasswordInputType = z.infer<typeof signInUserWithEmailAndPasswordInput>
