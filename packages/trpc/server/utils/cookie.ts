@@ -1,5 +1,4 @@
 import { CookieOptions, Response, Request} from 'express';
-import { noopMapper } from '../../../database';
 import { TPRCContext } from '../context';
 
 const ONE_MINUTE = 60*1000 //milliseconds in a minute
@@ -12,9 +11,9 @@ const ONE_YEAR = 12 * ONE_MONTH
 const defaultCookieOptions: CookieOptions = {
 	path: '/',
 	httpOnly: true,
-	secure: false,
+	secure: process.env.NODE_ENV === 'production' || false,
 	sameSite: 'strict',
-	maxAge: ONE_YEAR, 
+	maxAge: 7 * ONE_DAY, 
 };
 
 export function createCookieFactory(res: Response) {
@@ -42,8 +41,8 @@ export function clearCookieFactory(res: Response) {
 //Auth Cookies
 
 const AUTH_COOKIE_NAME = 'authentication-token'
-export function setAuthenticationCookie(ctx: TPRCContext, accestoken: string) {
-	ctx.createCookie(AUTH_COOKIE_NAME, accestoken)
+export function setAuthenticationCookie(ctx: TPRCContext, accessToken: string) {
+	ctx.createCookie(AUTH_COOKIE_NAME, accessToken)
 }
 
 export function getAuthenticationCookie(ctx: TPRCContext) {

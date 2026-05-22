@@ -1,4 +1,5 @@
 import { publicProcedure, router } from "../../trpc";
+import { TRPCError } from "@trpc/server";
 import { generatePath } from "../../utils/path-generator";
 import {
   createUserWithEmailAndPasswordInputModel,
@@ -10,7 +11,6 @@ import {
 } from "./model";
 import { userService } from "../../services";
 import { getAuthenticationCookie, setAuthenticationCookie } from "../../utils/cookie";
-import { signInUserWithEmailAndPasswordInput } from "@repo/services/user/modal";
 
 const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");
@@ -62,22 +62,27 @@ export const authRouter = router({
     }),
 
   getLoggedInUserInfo: publicProcedure
-  .meta({
+    .meta({
       openapi: {
         method: "POST",
         path: getPath("/getLoggedInUserInfo"),
         tags: TAGS,
       },
     })
-  .input(getLoggedInUserInfoInputModel)
-  .output(getLoggedInUserInfoOutputModel)
-  .query( async({ ctx }) => {
-    const userToken = getAuthenticationCookie(ctx)
-    if (!userToken) throw new Error('User is not logged in')
-     const { id, email, fullName, profileImageUrl} = await userService.verifyAndDecodeToken(userToken)
-    return {
-      id, email, fullName, profileImageUrl 
-    }
-  }
-  )
+    .input(getLoggedInUserInfoInputModel)
+    .output(getLoggedInUserInfoOutputModel)
+    .query(async ({ ctx }) => {
+      const userToken = getAuthenticationCookie(ctx);
+      if (!userToken) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "User is not logged in" });
+      }
+      const { id, email, fullName, profileImageUrl } =
+        await userService.verifyAndDecodeToken(userToken);
+      return {
+        id,
+        email,
+        fullName,
+        profileImageUrl,
+      };
+    }),
 });

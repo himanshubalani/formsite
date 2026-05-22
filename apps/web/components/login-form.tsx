@@ -42,7 +42,6 @@ export function LoginForm({
   });
 
   const onSubmit: SubmitHandler<LoginFormValues> = async (values) => {
-    console.log(values);
     const { id } = await signInUserWithEmailAndPasswordAsync({
       email: values.email,
       password: values.password
