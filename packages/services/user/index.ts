@@ -5,6 +5,8 @@ import {usersTable} from '@repo/database/models/user'
 import {type CreateUserWithEmailAndPasswordInputType, GenerateUserTokenPayloadType, SignInUserWithEmailAndPasswordInputType, createUserWithEmailAndPasswordInput, generateUserTokenPayload, signInUserWithEmailAndPasswordInput } from './modal'
 import { UserRefreshClient } from 'google-auth-library';
 import { env } from '../env';
+import { email } from 'zod';
+import { profile } from 'node:console';
 
 class UserService{
 
@@ -18,6 +20,29 @@ class UserService{
 		const { id } = await generateUserTokenPayload.parseAsync(payload)
 		const token = JWT.sign({ id }, env.JWT_SECRET)
 		return { token }
+	}
+
+	private async verifyUserToken(token: string):Promise<GenerateUserTokenPayloadType> {
+		try {
+			const verificationResult = JWT.verify( token, env.JWT_SECRET) as GenerateUserTokenPayloadType
+			return verificationResult
+		} catch (error) {
+			//why add this: we cannot trust a third party to send full errors as they may contain sensitive info, so we throw invaild token instead
+			throw new Error('Invalid Token')
+		} 
+	}
+
+	private async getUserInfoById(id:string) {
+		const user = await db.select({
+			id: usersTable.id,
+			email: usersTable.email,
+			fullName: usersTable.fullName,
+			profileImageUrl: usersTable.profileImageUrl
+		}).from(usersTable).where(eq(usersTable.id, id))
+		
+		if (!user || user.length === 0 ) throw new Error(`User with ID ${id} does not exist`)
+			
+		return user[0]!
 	}
 
 	private async generateHash(salt: string, password: string) {
@@ -64,6 +89,11 @@ class UserService{
 			return{ id: existingUser.id, token } 
 	}
 
+	public async verifyAndDecodeToken(token: string) {
+		const { id } = await this.verifyUserToken(token)
+		const userInfo = await this.getUserInfoById(id)
+		return { ...userInfo }
+	}
 }
 
 export default UserService

@@ -2,6 +2,7 @@
 
 import { cn } from "~/lib/utils"
 import { useForm, type SubmitHandler } from "react-hook-form";
+import { useRouter } from 'next/navigation'
 import { Button } from "~/components/ui/button"
 import {
   Card,
@@ -31,6 +32,7 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
 
   const { signInUserWithEmailAndPasswordAsync } = useSignIn();
+  const router = useRouter();
   
   const { register, handleSubmit } = useForm<LoginFormValues>({
     defaultValues: {
@@ -45,6 +47,7 @@ export function LoginForm({
       email: values.email,
       password: values.password
     })
+    router.replace('/dashboard');
   };
 
   return (

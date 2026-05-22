@@ -10,8 +10,7 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { trpc } from "~/trpc/client";
-import { email } from "zod";
+import { useRouter } from "next/navigation";
 import { useSignup } from "~/hooks/api/auth";
 
 type SignupFormValues = {
@@ -23,6 +22,7 @@ type SignupFormValues = {
 
 export function SignupForm({ className, ...props }: React.ComponentProps<"form">) {
   const { createUserWithEmailAndPasswordAsync } = useSignup();
+  const router = useRouter();
 
   const {
     register,
@@ -51,6 +51,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"form">
     });
     // TODO: Remove this before prod
     console.log(`User created with id ${id}`);
+    router.replace('/dashboard');
   };
 
   return (
