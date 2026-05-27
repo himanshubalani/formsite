@@ -91,3 +91,21 @@ export const useDeleteField = (formId: string) => {
     }
   });
 };
+
+// Hook to get public form data for filling out (no auth required)
+export const useGetPublicForm = (formId: string) => {
+  const { 
+    data: form, 
+    isLoading, 
+    error, 
+    isFetched 
+  } = trpc.form.getPublicForm.useQuery(
+    { id: formId },
+    { 
+      enabled: !!formId,
+      retry: false // Don't retry if it 404s or is unpublished
+    } 
+  );
+  
+  return { form, isLoading, error, isFetched };
+};

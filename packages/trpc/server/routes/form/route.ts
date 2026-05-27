@@ -1,8 +1,19 @@
-import { authenticatedProcedure, router } from "../../trpc";
+import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createFormInputModel, createFormOutputModel, getFormsInputModel, getFormsOutputModel, createFieldTrpcInput, updateFieldTrpcInput, 
-  deleteFieldTrpcInput, getFieldsTrpcInput, fieldOutputModel } from "./model";
-import { formService , formFieldService } from "../../services";
+import {
+  createFormInputModel,
+  createFormOutputModel,
+  getFormsInputModel,
+  getFormsOutputModel,
+  createFieldTrpcInput,
+  updateFieldTrpcInput,
+  deleteFieldTrpcInput,
+  getFieldsTrpcInput,
+  fieldOutputModel,
+  getPublicFormInputModel,
+  getPublicFormOutputModel,
+} from "./model";
+import { formService, formFieldService } from "../../services";
 import { z } from "zod";
 
 const TAGS = ["Forms"];
@@ -15,7 +26,7 @@ export const formRouter = router({
         method: "POST",
         path: getPath("/createForm"),
         tags: TAGS,
-		protect: true,
+        protect: true,
       },
     })
     .input(createFormInputModel)
@@ -40,7 +51,7 @@ export const formRouter = router({
       };
     }),
 
-	getForms: authenticatedProcedure
+  getForms: authenticatedProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -60,8 +71,8 @@ export const formRouter = router({
       // 3. Return clean data (Zod validates it against getFormsOutputModel)
       return forms;
     }),
-	createField: authenticatedProcedure
-    .meta({ openapi: { method: "POST", path: getPath("/createField"), tags: TAGS, protect: true,} })
+  createField: authenticatedProcedure
+    .meta({ openapi: { method: "POST", path: getPath("/createField"), tags: TAGS, protect: true } })
     .input(createFieldTrpcInput)
     .output(fieldOutputModel)
     .mutation(async ({ input, ctx }) => {
@@ -72,7 +83,7 @@ export const formRouter = router({
       return field;
     }),
 
-  getFields: authenticatedProcedure
+  getFields: authenticatedProcedure //This must be public
     .meta({ openapi: { method: "GET", path: getPath("/getFields"), tags: TAGS, protect: true } })
     .input(getFieldsTrpcInput)
     .output(z.array(fieldOutputModel))
@@ -85,7 +96,9 @@ export const formRouter = router({
     }),
 
   updateField: authenticatedProcedure
-    .meta({ openapi: { method: "PATCH", path: getPath("/updateField"), tags: TAGS, protect: true } })
+    .meta({
+      openapi: { method: "PATCH", path: getPath("/updateField"), tags: TAGS, protect: true },
+    })
     .input(updateFieldTrpcInput)
     .output(fieldOutputModel)
     .mutation(async ({ input, ctx }) => {
@@ -97,7 +110,9 @@ export const formRouter = router({
     }),
 
   deleteField: authenticatedProcedure
-    .meta({ openapi: { method: "DELETE", path: getPath("/deleteField"), tags: TAGS, protect: true } })
+    .meta({
+      openapi: { method: "DELETE", path: getPath("/deleteField"), tags: TAGS, protect: true },
+    })
     .input(deleteFieldTrpcInput)
     .output(z.object({ success: z.boolean(), id: z.string() }))
     .mutation(async ({ input, ctx }) => {
@@ -106,5 +121,17 @@ export const formRouter = router({
         userId: ctx.user.id,
       });
       return result;
+    }),
+
+  // Public endpoint for respondents to view the form
+  getPublicForm: publicProcedure
+    .meta({
+      openapi: { method: "GET", path: getPath("/public/{id}"), tags: TAGS },
+    })
+    .input(getPublicFormInputModel)
+    .output(getPublicFormOutputModel)
+    .query(async ({ input }) => {
+      const form = await formService.getPublicFormById(input.id);
+      return form;
     }),
 });

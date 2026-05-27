@@ -79,3 +79,15 @@ export const deleteFieldTrpcInput = z.object({
 export const getFieldsTrpcInput = z.object({
   formId: z.uuid(),
 });
+
+export const getPublicFormInputModel = z.object({
+  id: z.string().uuid(),
+});
+
+export const getPublicFormOutputModel = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  description: z.string().nullable(),
+  theme: z.string().nullable(),
+  fields: z.array(fieldOutputModel), // Reuses the field schema we made earlier!
+});

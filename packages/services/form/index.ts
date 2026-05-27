@@ -1,6 +1,10 @@
-import { db, eq, desc} from "@repo/database";
+import { db, eq, desc, asc } from "@repo/database";
 import { formsTable } from "@repo/database/models/forms";
-import { type CreateFormInputType, createFormInput } from "./model";
+import { formFieldsTable } from "@repo/database/models/form-field";
+import {
+  type CreateFormInputType,
+  createFormInput,
+} from "./model";
 
 class FormService {
   /**
@@ -8,21 +12,18 @@ class FormService {
    * Relies on strict Zod validation before interacting with Drizzle.
    */
   public async createForm(payload: CreateFormInputType) {
-    // 1. Zod Validation Layer (First line of defense)
-    const { 
-      title, 
-      description, 
-      visibility, 
-      isPublished, 
-      theme, 
-      slug, 
-      userId 
+    // 1. Validate incoming payload
+    const {
+      title,
+      description,
+      visibility,
+      isPublished,
+      theme,
+      slug,
+      userId,
     } = await createFormInput.parseAsync(payload);
 
-    // TODO: If you want custom slugs, you might want a private helper here 
-    // to check if `slug` already exists in the database and throw an error.
-
-    // 2. Database Layer 
+    // 2. Insert form
     const formInsertResult = await db
       .insert(formsTable)
       .values({
@@ -32,7 +33,7 @@ class FormService {
         isPublished,
         theme,
         slug,
-        createdBy: userId, // Mapping userId to createdBy foreign key
+        createdBy: userId,
       })
       .returning({
         id: formsTable.id,
@@ -42,13 +43,13 @@ class FormService {
         slug: formsTable.slug,
       });
 
-    if (!formInsertResult || formInsertResult.length === 0 || !formInsertResult[0]?.id) {
-      throw new Error("Something went wrong while creating the Form");
+    const createdForm = formInsertResult[0];
+
+    if (!createdForm) {
+      throw new Error("Something went wrong while creating the form.");
     }
 
-    const createdForm = formInsertResult[0]!;
-
-    // 3. Pass-by-value return (Prevents prototype pollution)
+    // 3. Return clean object
     return {
       id: createdForm.id,
       title: createdForm.title,
@@ -58,7 +59,6 @@ class FormService {
     };
   }
 
-
   /**
    * Fetches all forms created by a specific user.
    */
@@ -67,9 +67,8 @@ class FormService {
       .select()
       .from(formsTable)
       .where(eq(formsTable.createdBy, userId))
-      .orderBy(desc(formsTable.createdAt)); // Newest forms first
+      .orderBy(desc(formsTable.createdAt));
 
-    // Pass-by-value return to prevent prototype pollution
     return forms.map((form) => ({
       id: form.id,
       title: form.title,
@@ -82,24 +81,83 @@ class FormService {
     }));
   }
 
-public async listFormsByUserId(userId: string) {
-    const forms = await db
+  /**
+   * Alias for getFormsByUserId
+   */
+  public async listFormsByUserId(userId: string) {
+    return this.getFormsByUserId(userId);
+  }
+
+  /**
+   * Fetches a public form and its fields.
+   * Ensures the form exists, is published,
+   * and has not expired.
+   */
+  public async getPublicFormById(formId: string) {
+    // 1. Fetch form with joined fields
+    const formResults = await db
       .select()
       .from(formsTable)
-      .where(eq(formsTable.createdBy, userId))
-      .orderBy(desc(formsTable.createdAt));
+      .leftJoin(
+        formFieldsTable,
+        eq(formsTable.id, formFieldsTable.formId)
+      )
+      .where(eq(formsTable.id, formId))
+      .orderBy(asc(formFieldsTable.index));
 
-    // Pass-by-value return
-    return forms.map((form) => ({
-      id: form.id,
-      title: form.title,
-      description: form.description,
-      visibility: form.visibility,
-      isPublished: form.isPublished,
-      theme: form.theme,
-      slug: form.slug,
-      createdAt: form.createdAt,
-    }));
+    if (formResults.length === 0) {
+      throw new Error("Form not found");
+    }
+
+    // 2. Extract form safely from joined result
+    const formData = formResults[0]?.forms;
+
+    if (!formData) {
+      throw new Error("Form not found");
+    }
+
+    // 3. Security checks
+    if (!formData.isPublished) {
+      throw new Error(
+        "This form is currently not accepting responses."
+      );
+    }
+
+    if (
+      formData.expired &&
+      formData.expiredAt &&
+      new Date() > formData.expiredAt
+    ) {
+      throw new Error(
+        "This form has expired and is no longer accepting responses."
+      );
+    }
+
+    // 4. Extract and normalize fields
+    const fields = formResults
+      .map((row) => row.form_field)
+      .filter((field): field is NonNullable<typeof field> => !!field);
+
+    // 5. Return clean object
+    return {
+      id: formData.id,
+      title: formData.title,
+      description: formData.description,
+      theme: formData.theme,
+
+      fields: fields.map((field) => ({
+        id: field.id,
+        formId: field.formId,
+        label: field.label,
+        labelKey: field.labelKey,
+        description: field.description,
+        placeholder: field.placeholder,
+        type: field.type,
+        isRequired: field.isRequired,
+        options: field.options,
+        index: field.index.toString(),
+      })),
+    };
   }
 }
 
