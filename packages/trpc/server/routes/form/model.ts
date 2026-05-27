@@ -91,3 +91,17 @@ export const getPublicFormOutputModel = z.object({
   theme: z.string().nullable(),
   fields: z.array(fieldOutputModel), // Reuses the field schema we made earlier!
 });
+
+export const submitPublicFormInputModel = z.object({
+  formId: z.string().uuid(),
+  // Frontend sends { "fieldId": "value" }, we accept broadly to parse it correctly
+  values: z.record(
+    z.string(), 
+    z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]).nullable().optional()
+  ),
+});
+
+export const submitPublicFormOutputModel = z.object({
+  id: z.string().uuid(),
+  success: z.boolean(),
+});

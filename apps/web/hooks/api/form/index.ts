@@ -109,3 +109,7 @@ export const useGetPublicForm = (formId: string) => {
   
   return { form, isLoading, error, isFetched };
 };
+
+export const useSubmitPublicForm = () => {
+  return trpc.form.submitPublicForm.useMutation();
+};

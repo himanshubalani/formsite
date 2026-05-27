@@ -2,10 +2,11 @@
 
 import { useParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
-import { useGetPublicForm } from "~/hooks/api/form";
+import { useGetPublicForm, useSubmitPublicForm } from "~/hooks/api/form";
 
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -19,26 +20,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 export default function PublicFormPage() {
   const params = useParams();
   const formId = params.id as string;
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Fetch the public form data
   const { form: formDetails, isLoading, error } = useGetPublicForm(formId);
+  
+  // Submit Response Hook
+  const { mutateAsync: submitResponseAsync } = useSubmitPublicForm();
 
   // Initialize dynamic form
   const {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm();
 
   // Handle Submission
   const onSubmit = async (data: Record<string, any>) => {
     try {
-      console.log("Form Response Data:", data);
-      
-      // TODO: Connect this to the submission API endpoint later!
-      // await submitResponseAsync({ formId, values: data });
-      
+      await submitResponseAsync({ formId, values: data });
+      setIsSubmitted(true);
       toast.success("Response submitted successfully!");
     } catch (err: any) {
       toast.error(err.message || "Failed to submit response.");
@@ -65,6 +68,27 @@ export default function PublicFormPage() {
           <CardContent>
             <p className="text-muted-foreground">
               {error?.message || "This form is unavailable."}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Success State
+  if (isSubmitted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/20 p-4">
+        <Card className="w-full max-w-md text-center shadow-lg border-t-4 border-t-primary">
+          <CardHeader className="pt-8">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle2 className="h-10 w-10 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Thank you!</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Your response has been successfully recorded.
             </p>
           </CardContent>
         </Card>
@@ -232,10 +256,7 @@ export default function PublicFormPage() {
               type="button"
               variant="ghost"
               className="text-muted-foreground text-sm"
-              onClick={() => {
-                // Just for testing clear state
-                toast("Form cleared");
-              }}
+              onClick={() => reset()}
             >
               Clear form
             </Button>

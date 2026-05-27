@@ -12,8 +12,10 @@ import {
   fieldOutputModel,
   getPublicFormInputModel,
   getPublicFormOutputModel,
+  submitPublicFormInputModel,
+  submitPublicFormOutputModel,
 } from "./model";
-import { formService, formFieldService } from "../../services";
+import { formService, formFieldService, formSubmissionService } from "../../services";
 import { z } from "zod";
 
 const TAGS = ["Forms"];
@@ -133,5 +135,37 @@ export const formRouter = router({
     .query(async ({ input }) => {
       const form = await formService.getPublicFormById(input.id);
       return form;
+    }),
+  // Public endpoint to submit form responses
+  submitPublicForm: publicProcedure
+    .meta({
+      openapi: { method: "POST", path: getPath("/public/{formId}/submit"), tags: TAGS },
+    })
+    .input(submitPublicFormInputModel)
+    .output(submitPublicFormOutputModel)
+    .mutation(async ({ input }) => {
+      // 1. Transform the generic frontend dictionary `{ fieldId: value }`
+      // into the strict array the database expects `[{ formFieldId, value }]`
+      const formattedValues = Object.entries(input.values).map(([formFieldId, rawValue]) => {
+        let value: string | string[] | null = null;
+        if (Array.isArray(rawValue)) {
+          value = rawValue.map(String);
+        } else if (rawValue !== null && rawValue !== undefined) {
+          value = String(rawValue);
+        }
+        return { formFieldId, value };
+      });
+
+      // 2. Pass to service layer
+      const result = await formSubmissionService.submitForm({
+        formId: input.formId,
+        values: formattedValues,
+      });
+
+      // 3. Return sanitized data
+      return {
+        id: result.id,
+        success: true,
+      };
     }),
 });
