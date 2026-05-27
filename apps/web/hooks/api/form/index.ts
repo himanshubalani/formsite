@@ -51,3 +51,43 @@ export const useGetForms = () => {
     status
   };
 };
+
+// Hook to fetch all fields for a specific form
+export const useGetFields = (formId: string) => {
+  const { data: fields, isLoading, error, refetch } = trpc.form.getFields.useQuery(
+    { formId },
+    { enabled: !!formId } // Only run if formId is provided
+  );
+  return { fields, isLoading, error, refetch };
+};
+
+// Hook to create a new field
+export const useCreateField = (formId: string) => {
+  const utils = trpc.useUtils();
+  return trpc.form.createField.useMutation({
+    onSuccess: async () => {
+      // Invalidate the field list for this specific form
+      await utils.form.getFields.invalidate({ formId });
+    }
+  });
+};
+
+// Hook to update an existing field
+export const useUpdateField = (formId: string) => {
+  const utils = trpc.useUtils();
+  return trpc.form.updateField.useMutation({
+    onSuccess: async () => {
+      await utils.form.getFields.invalidate({ formId });
+    }
+  });
+};
+
+// Hook to delete a field
+export const useDeleteField = (formId: string) => {
+  const utils = trpc.useUtils();
+  return trpc.form.deleteField.useMutation({
+    onSuccess: async () => {
+      await utils.form.getFields.invalidate({ formId });
+    }
+  });
+};

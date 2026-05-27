@@ -31,3 +31,51 @@ export const getFormsOutputModel = z.array(
     createdAt: z.date(),
   })
 );
+
+const fieldTypeEnum = z.enum([
+  'SHORT_TEXT', 'LONG_TEXT', 'NUMBER', 'EMAIL', 'DATE', 
+  'RADIO', 'CHECKBOX', 'SINGLE_SELECT', 'MULTI_SELECT'
+]);
+
+export const fieldOutputModel = z.object({
+  id: z.uuid(),
+  formId: z.uuid(),
+  label: z.string(),
+  labelKey: z.string(),
+  description: z.string().nullable(),
+  placeholder: z.string().nullable(),
+  type: fieldTypeEnum,
+  isRequired: z.boolean(),
+  options: z.array(z.string()).nullable(),
+  index: z.string(), // returned as string from DB numeric
+});
+
+export const createFieldTrpcInput = z.object({
+  formId: z.uuid(),
+  label: z.string().min(1).max(255),
+  description: z.string().optional().nullable(),
+  placeholder: z.string().optional().nullable(),
+  type: fieldTypeEnum,
+  isRequired: z.boolean().default(false),
+  options: z.array(z.string()).optional().nullable(),
+  index: z.number(),
+});
+
+export const updateFieldTrpcInput = z.object({
+  id: z.uuid(),
+  label: z.string().min(1).max(255).optional(),
+  description: z.string().optional().nullable(),
+  placeholder: z.string().optional().nullable(),
+  type: fieldTypeEnum.optional(),
+  isRequired: z.boolean().optional(),
+  options: z.array(z.string()).optional().nullable(),
+  index: z.number().optional(),
+});
+
+export const deleteFieldTrpcInput = z.object({
+  id: z.uuid(),
+});
+
+export const getFieldsTrpcInput = z.object({
+  formId: z.uuid(),
+});

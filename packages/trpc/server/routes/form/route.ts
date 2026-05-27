@@ -1,7 +1,9 @@
 import { authenticatedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createFormInputModel, createFormOutputModel, getFormsInputModel, getFormsOutputModel } from "./model";
-import { formService } from "../../services";
+import { createFormInputModel, createFormOutputModel, getFormsInputModel, getFormsOutputModel, createFieldTrpcInput, updateFieldTrpcInput, 
+  deleteFieldTrpcInput, getFieldsTrpcInput, fieldOutputModel } from "./model";
+import { formService , formFieldService } from "../../services";
+import { z } from "zod";
 
 const TAGS = ["Forms"];
 const getPath = generatePath("/forms");
@@ -57,5 +59,52 @@ export const formRouter = router({
 
       // 3. Return clean data (Zod validates it against getFormsOutputModel)
       return forms;
+    }),
+	createField: authenticatedProcedure
+    .meta({ openapi: { method: "POST", path: getPath("/createField"), tags: TAGS, protect: true,} })
+    .input(createFieldTrpcInput)
+    .output(fieldOutputModel)
+    .mutation(async ({ input, ctx }) => {
+      const field = await formFieldService.createField({
+        ...input,
+        userId: ctx.user.id,
+      });
+      return field;
+    }),
+
+  getFields: authenticatedProcedure
+    .meta({ openapi: { method: "GET", path: getPath("/getFields"), tags: TAGS, protect: true } })
+    .input(getFieldsTrpcInput)
+    .output(z.array(fieldOutputModel))
+    .query(async ({ input, ctx }) => {
+      const fields = await formFieldService.getFields({
+        formId: input.formId,
+        userId: ctx.user.id,
+      });
+      return fields;
+    }),
+
+  updateField: authenticatedProcedure
+    .meta({ openapi: { method: "PATCH", path: getPath("/updateField"), tags: TAGS, protect: true } })
+    .input(updateFieldTrpcInput)
+    .output(fieldOutputModel)
+    .mutation(async ({ input, ctx }) => {
+      const field = await formFieldService.updateField({
+        ...input,
+        userId: ctx.user.id,
+      });
+      return field;
+    }),
+
+  deleteField: authenticatedProcedure
+    .meta({ openapi: { method: "DELETE", path: getPath("/deleteField"), tags: TAGS, protect: true } })
+    .input(deleteFieldTrpcInput)
+    .output(z.object({ success: z.boolean(), id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await formFieldService.deleteField({
+        id: input.id,
+        userId: ctx.user.id,
+      });
+      return result;
     }),
 });
