@@ -38,7 +38,7 @@ export default function PublicFormPage() {
   } = useForm();
 
   // Handle Submission
-  const onSubmit = async (data: Record<string, any>) => {
+  const onSubmit = async (data: Record<string, unknown>) => {
     try {
       await submitResponseAsync({ formId, values: data });
       setIsSubmitted(true);

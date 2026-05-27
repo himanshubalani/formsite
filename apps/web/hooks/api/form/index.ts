@@ -113,3 +113,27 @@ export const useGetPublicForm = (formId: string) => {
 export const useSubmitPublicForm = () => {
   return trpc.form.submitPublicForm.useMutation();
 };
+
+// Hook to get all submissions for a specific form
+export const useGetFormSubmissions = (formId: string) => {
+  const { 
+    data: submissions, 
+    isLoading, 
+    error, 
+    isFetched,
+    refetch
+  } = trpc.form.getFormSubmissions.useQuery(
+    { formId },
+    { 
+      enabled: !!formId, // Only execute the query if formId is present
+    }
+  );
+
+  return { 
+    submissions, 
+    isLoading, 
+    error, 
+    isFetched,
+    refetch
+  };
+};
