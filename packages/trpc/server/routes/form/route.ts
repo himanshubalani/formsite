@@ -14,6 +14,8 @@ import {
   getPublicFormOutputModel,
   submitPublicFormInputModel,
   submitPublicFormOutputModel,
+  getFormSubmissionsTrpcInput,
+  getFormSubmissionsTrpcOutput,
 } from "./model";
 import { formService, formFieldService, formSubmissionService } from "../../services";
 import { z } from "zod";
@@ -167,5 +169,27 @@ export const formRouter = router({
         id: result.id,
         success: true,
       };
+    }),
+
+	getFormSubmissions: authenticatedProcedure
+    .meta({
+      openapi: { 
+        method: "GET", 
+        path: getPath("/getSubmissions"), 
+        tags: TAGS, 
+        protect: true 
+      },
+    })
+    .input(getFormSubmissionsTrpcInput)
+    .output(getFormSubmissionsTrpcOutput)
+    .query(async ({ input, ctx }) => {
+      // 1. Pass the formId and the authenticated userId to the service layer
+      const submissions = await formSubmissionService.getFormSubmissions({
+        formId: input.formId,
+        userId: ctx.user.id,
+      });
+
+      // 2. Return the data (Zod strictly validates and strips invalid data here)
+      return submissions;
     }),
 });

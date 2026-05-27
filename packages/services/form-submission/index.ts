@@ -1,7 +1,9 @@
-import { db, eq } from "@repo/database";
+import { and, db, desc, eq } from "@repo/database";
 import { formSubmissionTable } from "@repo/database/models/form-submission";
 import { formsTable } from "@repo/database/models/forms";
-import { submitFormInput, type SubmitFormInputType } from "./model";
+import { submitFormInput, type SubmitFormInputType,
+	getFormSubmissionsInput, type GetFormSubmissionsInputType 
+} from "./model";
 
 class FormSubmissionService {
   public async submitForm(payload: SubmitFormInputType) {
@@ -36,6 +38,35 @@ class FormSubmissionService {
     return {
       id: insertResult[0]!.id,
     };
+  }
+ public async getFormSubmissions(payload: GetFormSubmissionsInputType) {
+    // 1. Validate input strictly
+    const { formId, userId } = await getFormSubmissionsInput.parseAsync(payload);
+
+    // 2. Enforce Ownership: Verify the user actually owns this form
+    const form = await db
+      .select({ id: formsTable.id })
+      .from(formsTable)
+      .where(and(eq(formsTable.id, formId), eq(formsTable.createdBy, userId)));
+
+    if (!form || form.length === 0) {
+      throw new Error("Unauthorized: You do not own this form or it does not exist.");
+    }
+
+    // 3. Fetch all submissions for this form, newest first
+    const submissions = await db
+      .select()
+      .from(formSubmissionTable)
+      .where(eq(formSubmissionTable.formId, formId))
+      .orderBy(desc(formSubmissionTable.createdAt));
+
+    // 4. Return Pass-by-Value mapping to prevent Prototype vulnerabilities
+    return submissions.map((sub) => ({
+      id: sub.id,
+      formId: sub.formId,
+      values: sub.values,
+      createdAt: sub.createdAt,
+    }));
   }
 }
 
