@@ -81,6 +81,26 @@ class FormService {
       createdAt: form.createdAt,
     }));
   }
+
+public async listFormsByUserId(userId: string) {
+    const forms = await db
+      .select()
+      .from(formsTable)
+      .where(eq(formsTable.createdBy, userId))
+      .orderBy(desc(formsTable.createdAt));
+
+    // Pass-by-value return
+    return forms.map((form) => ({
+      id: form.id,
+      title: form.title,
+      description: form.description,
+      visibility: form.visibility,
+      isPublished: form.isPublished,
+      theme: form.theme,
+      slug: form.slug,
+      createdAt: form.createdAt,
+    }));
+  }
 }
 
 export default FormService;
