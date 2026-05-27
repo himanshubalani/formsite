@@ -1,4 +1,4 @@
-import { publicProcedure, router } from "../../trpc";
+import { publicProcedure, router, authenticatedProcedure } from "../../trpc";
 import { TRPCError } from "@trpc/server";
 import { generatePath } from "../../utils/path-generator";
 import {
@@ -61,7 +61,7 @@ export const authRouter = router({
       };
     }),
 
-  getLoggedInUserInfo: publicProcedure
+  getLoggedInUserInfo: authenticatedProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -72,12 +72,9 @@ export const authRouter = router({
     .input(getLoggedInUserInfoInputModel)
     .output(getLoggedInUserInfoOutputModel)
     .query(async ({ ctx }) => {
-      const userToken = getAuthenticationCookie(ctx);
-      if (!userToken) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "User is not logged in" });
-      }
+      
       const { id, email, fullName, profileImageUrl } =
-        await userService.verifyAndDecodeToken(userToken);
+        await userService.getUserInfoById(ctx.user.id);
       return {
         id,
         email,
