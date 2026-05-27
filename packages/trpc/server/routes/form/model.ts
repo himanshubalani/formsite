@@ -10,9 +10,24 @@ export const createFormInputModel = z.object({
 });
 
 export const createFormOutputModel = z.object({
-  id: z.string().uuid().describe("ID of the newly created form"),
+  id: z.string().describe("ID of the newly created form"),
   title: z.string(),
   visibility: z.enum(["PUBLIC", "UNLISTED"]),
   isPublished: z.boolean(),
   slug: z.string().nullable().optional(),
 });
+
+export const getFormsInputModel = z.undefined();
+
+export const getFormsOutputModel = z.array(
+  z.object({
+    id: z.string().describe("Form ID"),
+    title: z.string(),
+    description: z.string().nullable().optional(),
+    visibility: z.enum(["PUBLIC", "UNLISTED"]),
+    isPublished: z.boolean(),
+    theme: z.string().nullable().optional(),
+    slug: z.string().nullable().optional(),
+    createdAt: z.date(),
+  })
+);

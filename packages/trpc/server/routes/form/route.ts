@@ -1,6 +1,6 @@
 import { authenticatedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createFormInputModel, createFormOutputModel } from "./model";
+import { createFormInputModel, createFormOutputModel, getFormsInputModel, getFormsOutputModel } from "./model";
 import { formService } from "../../services";
 
 const TAGS = ["Forms"];
@@ -36,5 +36,26 @@ export const formRouter = router({
         isPublished: form.isPublished,
         slug: form.slug,
       };
+    }),
+
+	getForms: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/getForms"),
+        tags: TAGS,
+      },
+    })
+    .input(getFormsInputModel)
+    .output(getFormsOutputModel)
+    .query(async ({ ctx }) => {
+      // 1. Extract secure userId from context
+      const userId = ctx.user.id;
+
+      // 2. Fetch from service
+      const forms = await formService.getFormsByUserId(userId);
+
+      // 3. Return clean data (Zod validates it against getFormsOutputModel)
+      return forms;
     }),
 });

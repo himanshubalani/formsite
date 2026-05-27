@@ -1,4 +1,4 @@
-import { db } from "@repo/database";
+import { db, eq, desc} from "@repo/database";
 import { formsTable } from "@repo/database/models/forms";
 import { type CreateFormInputType, createFormInput } from "./model";
 
@@ -56,6 +56,30 @@ class FormService {
       isPublished: createdForm.isPublished,
       slug: createdForm.slug,
     };
+  }
+
+
+  /**
+   * Fetches all forms created by a specific user.
+   */
+  public async getFormsByUserId(userId: string) {
+    const forms = await db
+      .select()
+      .from(formsTable)
+      .where(eq(formsTable.createdBy, userId))
+      .orderBy(desc(formsTable.createdAt)); // Newest forms first
+
+    // Pass-by-value return to prevent prototype pollution
+    return forms.map((form) => ({
+      id: form.id,
+      title: form.title,
+      description: form.description,
+      visibility: form.visibility,
+      isPublished: form.isPublished,
+      theme: form.theme,
+      slug: form.slug,
+      createdAt: form.createdAt,
+    }));
   }
 }
 
